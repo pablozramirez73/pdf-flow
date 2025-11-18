@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Files, Merge, RefreshCw, FileText, Scissors } from 'lucide-react';
+import { LayoutDashboard, Files, Merge, RefreshCw, FileText, Scissors, Sparkles } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
@@ -11,6 +11,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
   const navItems = [
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.DOCUMENTS, label: 'My Documents', icon: Files },
+    { id: ViewState.AI_ASSISTANT, label: 'AI Assistant', icon: Sparkles },
     { id: ViewState.MERGE, label: 'Merge PDFs', icon: Merge },
     { id: ViewState.SPLIT, label: 'Split PDF', icon: Scissors },
     { id: ViewState.ROTATE, label: 'Rotate PDFs', icon: RefreshCw },
@@ -47,8 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
 
       <div className="p-4 border-t border-gray-700">
         <div className="bg-gray-800 rounded-lg p-3 text-xs text-gray-400">
-          <p className="font-semibold text-gray-300 mb-1">Local Database Active</p>
-          <p>Documents are stored securely in your browser's IndexedDB.</p>
+          <p className="font-semibold text-gray-300 mb-1">Local Storage</p>
+          <p>Documents are stored securely in your browser's local database.</p>
         </div>
       </div>
     </div>

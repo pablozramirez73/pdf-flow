@@ -21,6 +21,7 @@ export enum ViewState {
   MERGE = 'MERGE',
   ROTATE = 'ROTATE',
   SPLIT = 'SPLIT',
+  AI_ASSISTANT = 'AI_ASSISTANT',
 }
 
 export interface ToastMessage {

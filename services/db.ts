@@ -1,10 +1,9 @@
 import { PDFDocumentEntity, PDFMetadata } from '../types';
 
 const DB_NAME = 'PDFFlowDB';
-const DB_VERSION = 1;
 const STORE_NAME = 'documents';
+const DB_VERSION = 1;
 
-// Helper to open database
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -12,7 +11,7 @@ const openDB = (): Promise<IDBDatabase> => {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
 
-    request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+    request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: 'id' });
@@ -23,17 +22,18 @@ const openDB = (): Promise<IDBDatabase> => {
 
 export const dbService = {
   async saveDocument(file: File): Promise<PDFMetadata> {
-    const buffer = await file.arrayBuffer();
+    const db = await openDB();
+    const arrayBuffer = await file.arrayBuffer();
+    
     const doc: PDFDocumentEntity = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substr(2, 9),
       name: file.name,
       size: file.size,
       type: file.type,
       createdAt: Date.now(),
-      data: buffer,
+      data: arrayBuffer,
     };
 
-    const db = await openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
@@ -56,8 +56,9 @@ export const dbService = {
 
       request.onsuccess = () => {
         const docs = request.result as PDFDocumentEntity[];
-        // Return only metadata to keep UI light
-        const metadata = docs.map(({ data, ...meta }) => meta).sort((a, b) => b.createdAt - a.createdAt);
+        // Return only metadata, exclude heavy data buffer to keep UI light
+        const metadata = docs.map(({ data, ...meta }) => meta)
+                             .sort((a, b) => b.createdAt - a.createdAt);
         resolve(metadata);
       };
       request.onerror = () => reject(request.error);

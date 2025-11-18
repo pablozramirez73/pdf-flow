@@ -4,8 +4,9 @@ import { Sidebar } from './components/Sidebar';
 import { FileUploader } from './components/FileUploader';
 import { dbService } from './services/db.ts';
 import { pdfService } from './services/pdfService.ts';
+import { aiService } from './services/aiService.ts';
 import { PDFMetadata, ViewState, ToastMessage } from './types';
-import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors } from 'lucide-react';
+import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors, Sparkles, Bot } from 'lucide-react';
 
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
@@ -28,6 +29,7 @@ function App() {
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
   const [splitRange, setSplitRange] = useState('');
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
 
   // Initial Data Load
   useEffect(() => {
@@ -129,7 +131,7 @@ function App() {
       setCurrentView(ViewState.DOCUMENTS);
     } catch (error) {
       console.error(error);
-      addToast('error', 'Failed to merge PDFs');
+      addToast('error', error instanceof Error ? error.message : 'Failed to merge PDFs');
     } finally {
       setIsProcessing(false);
     }
@@ -154,7 +156,7 @@ function App() {
         setCurrentView(ViewState.DOCUMENTS);
       }
     } catch (error) {
-      addToast('error', 'Failed to rotate PDF');
+      addToast('error', error instanceof Error ? error.message : 'Failed to rotate PDF');
     } finally {
       setIsProcessing(false);
     }
@@ -220,10 +222,33 @@ function App() {
     }
   };
 
+  const handleAnalyze = async () => {
+    if (selectedDocs.size !== 1) {
+      addToast('error', 'Please select exactly 1 document to analyze');
+      return;
+    }
+    setIsProcessing(true);
+    setAiSummary(null);
+    try {
+      const id = Array.from(selectedDocs)[0];
+      const doc = await dbService.getDocument(id);
+      if (doc) {
+        const summary = await aiService.summarizeDocument(doc.data, doc.name);
+        setAiSummary(summary);
+        addToast('success', 'Document analysis complete!');
+      }
+    } catch (error) {
+      addToast('error', error instanceof Error ? error.message : 'Failed to analyze document');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const toggleSelection = (id: string) => {
     setSelectedDocs(prev => {
-      // For Rotate and Split views, we only allow single selection
-      if ((currentView === ViewState.ROTATE || currentView === ViewState.SPLIT) && !prev.has(id)) {
+      // For Rotate, Split, and AI views, we only allow single selection
+      const singleSelectViews = [ViewState.ROTATE, ViewState.SPLIT, ViewState.AI_ASSISTANT];
+      if (singleSelectViews.includes(currentView) && !prev.has(id)) {
         return new Set([id]);
       }
       const next = new Set(prev);
@@ -518,6 +543,52 @@ function App() {
     </div>
   );
 
+  const renderAiView = () => (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-teal-50 rounded-lg">
+              <Sparkles className="w-6 h-6 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">AI Assistant</h2>
+              <p className="text-gray-500">Select a document to generate a summary using Gemini AI.</p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleAnalyze}
+            disabled={selectedDocs.size !== 1 || isProcessing}
+            className={`
+              flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-white transition-all
+              ${selectedDocs.size !== 1 || isProcessing 
+                ? 'bg-gray-300 cursor-not-allowed' 
+                : 'bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-600/30 active:scale-95'}
+            `}
+          >
+            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Bot className="w-4 h-4" />}
+            <span>{isProcessing ? 'Analyzing...' : 'Generate Summary'}</span>
+          </button>
+        </div>
+      </div>
+
+      {aiSummary && (
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-teal-100 animate-fade-in-up">
+           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+             <Sparkles className="w-5 h-5 text-teal-500" />
+             <h3 className="font-bold text-gray-800">AI Analysis Result</h3>
+           </div>
+           <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
+             {aiSummary}
+           </div>
+        </div>
+      )}
+
+      {renderDocumentList(true)}
+    </div>
+  );
+
   const renderToasts = () => (
     <div className="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none">
       {toasts.map((toast) => {
@@ -551,6 +622,7 @@ function App() {
         setCurrentView(view);
         setSelectedDocs(new Set());
         setSplitRange('');
+        setAiSummary(null);
       }} />
       
       <main className="flex-1 ml-64 p-8">
@@ -560,6 +632,7 @@ function App() {
           {currentView === ViewState.MERGE && renderMergeView()}
           {currentView === ViewState.SPLIT && renderSplitView()}
           {currentView === ViewState.ROTATE && renderRotateView()}
+          {currentView === ViewState.AI_ASSISTANT && renderAiView()}
         </div>
       </main>
 
