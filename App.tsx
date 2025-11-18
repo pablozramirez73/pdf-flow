@@ -50,25 +50,16 @@ function App() {
     }, 3000);
   };
 
-  const handleUpload = async (files: FileList) => {
-    let successCount = 0;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type !== 'application/pdf') {
-        addToast('error', `${file.name} is not a PDF`);
-        continue;
-      }
-      try {
-        await dbService.saveDocument(file);
-        successCount++;
-      } catch (error) {
-        addToast('error', `Failed to save ${file.name}`);
-      }
+  const handleUploadFile = async (file: File) => {
+    if (file.type !== 'application/pdf') {
+      throw new Error(`File ${file.name} is not a PDF`);
     }
-    if (successCount > 0) {
-      addToast('success', `Successfully uploaded ${successCount} file(s)`);
-      await loadDocuments();
-    }
+    await dbService.saveDocument(file);
+  };
+
+  const handleBatchComplete = async () => {
+    addToast('success', 'Files processed successfully');
+    await loadDocuments();
   };
 
   const handleDelete = async (id: string) => {
@@ -219,7 +210,7 @@ function App() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4">Quick Upload</h2>
-        <FileUploader onUpload={handleUpload} />
+        <FileUploader onUploadFile={handleUploadFile} onBatchComplete={handleBatchComplete} />
       </div>
     </div>
   );
