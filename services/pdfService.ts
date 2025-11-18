@@ -23,5 +23,23 @@ export const pdfService = {
     });
 
     return await pdfDoc.save();
+  },
+
+  async extractPages(pdfBuffer: ArrayBuffer, pageIndices: number[]): Promise<Uint8Array> {
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const newPdf = await PDFDocument.create();
+    
+    // Validate indices against document length to prevent errors
+    const pageCount = pdfDoc.getPageCount();
+    const validIndices = pageIndices.filter(i => i >= 0 && i < pageCount);
+
+    if (validIndices.length === 0) {
+      throw new Error(`Invalid page range. Document only has ${pageCount} pages.`);
+    }
+
+    const copiedPages = await newPdf.copyPages(pdfDoc, validIndices);
+    copiedPages.forEach((page) => newPdf.addPage(page));
+
+    return await newPdf.save();
   }
 };

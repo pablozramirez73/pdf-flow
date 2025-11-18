@@ -5,7 +5,7 @@ import { FileUploader } from './components/FileUploader';
 import { dbService } from './services/db.ts';
 import { pdfService } from './services/pdfService.ts';
 import { PDFMetadata, ViewState, ToastMessage } from './types';
-import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2 } from 'lucide-react';
+import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors } from 'lucide-react';
 
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
@@ -27,6 +27,7 @@ function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [splitRange, setSplitRange] = useState('');
 
   // Initial Data Load
   useEffect(() => {
@@ -103,8 +104,6 @@ function App() {
     }
     setIsProcessing(true);
     try {
-      // Fetch actual data for selected docs
-      // Sort by creation date ascending to ensure logical order (Oldest -> Newest)
       const docsToMerge = documents
         .filter(d => selectedDocs.has(d.id))
         .sort((a, b) => a.createdAt - b.createdAt);
@@ -161,8 +160,72 @@ function App() {
     }
   };
 
+  const parsePageRange = (rangeStr: string): number[] => {
+    const pages = new Set<number>();
+    const parts = rangeStr.split(',').map(p => p.trim());
+    
+    for (const part of parts) {
+      if (!part) continue;
+      if (part.includes('-')) {
+        const [start, end] = part.split('-').map(n => parseInt(n));
+        if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
+          for (let i = start; i <= end; i++) pages.add(i - 1);
+        }
+      } else {
+        const page = parseInt(part);
+        if (!isNaN(page) && page > 0) pages.add(page - 1);
+      }
+    }
+    return Array.from(pages).sort((a, b) => a - b);
+  };
+
+  const handleSplit = async () => {
+    if (selectedDocs.size !== 1) {
+      addToast('error', 'Please select exactly 1 document to split');
+      return;
+    }
+    if (!splitRange.trim()) {
+      addToast('error', 'Please enter a page range (e.g., 1-3)');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const indices = parsePageRange(splitRange);
+      if (indices.length === 0) {
+        throw new Error('Invalid page selection');
+      }
+
+      const id = Array.from(selectedDocs)[0];
+      const doc = await dbService.getDocument(id);
+      if (doc) {
+        const extractedBytes = await pdfService.extractPages(doc.data, indices);
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const newFileName = `extracted-${doc.name.replace('.pdf', '')}-${timestamp}.pdf`;
+        const newFile = new File([extractedBytes], newFileName, { type: 'application/pdf' });
+        
+        await dbService.saveDocument(newFile);
+        await loadDocuments();
+        
+        setSelectedDocs(new Set());
+        setSplitRange('');
+        addToast('success', 'Pages extracted successfully!');
+        setCurrentView(ViewState.DOCUMENTS);
+      }
+    } catch (error) {
+      addToast('error', error instanceof Error ? error.message : 'Failed to extract pages. Check page numbers.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const toggleSelection = (id: string) => {
     setSelectedDocs(prev => {
+      // For Rotate and Split views, we only allow single selection
+      if ((currentView === ViewState.ROTATE || currentView === ViewState.SPLIT) && !prev.has(id)) {
+        return new Set([id]);
+      }
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -219,7 +282,7 @@ function App() {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
         <h2 className="text-lg font-bold text-gray-800">
-          {selectionMode ? 'Select Documents' : 'All Documents'}
+          {selectionMode ? 'Select Document' : 'All Documents'}
         </h2>
         {selectionMode && (
            <div className="text-sm text-gray-500">
@@ -405,6 +468,56 @@ function App() {
     </div>
   );
 
+  const renderSplitView = () => (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 rounded-lg">
+              <Scissors className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Split / Extract Pages</h2>
+              <p className="text-gray-500 text-sm mt-1">Select a document and specify pages to create a new PDF.</p>
+            </div>
+          </div>
+
+          <div className="flex-1 max-w-xl">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Page Ranges
+            </label>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={splitRange}
+                onChange={(e) => setSplitRange(e.target.value)}
+                placeholder="e.g. 1, 3-5, 8"
+                className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2.5 text-sm"
+              />
+              <button
+                onClick={handleSplit}
+                disabled={selectedDocs.size !== 1 || !splitRange || isProcessing}
+                className={`
+                  flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-white transition-all whitespace-nowrap
+                  ${selectedDocs.size !== 1 || !splitRange || isProcessing 
+                    ? 'bg-gray-300 cursor-not-allowed' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/30 active:scale-95'}
+                `}
+              >
+                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Scissors className="w-4 h-4" />}
+                <span>{isProcessing ? 'Extracting...' : 'Extract Pages'}</span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Enter page numbers separated by commas. Use hyphens for ranges. Example: <strong>1, 3-5</strong> will extract pages 1, 3, 4, and 5.
+            </p>
+          </div>
+        </div>
+      </div>
+      {renderDocumentList(true)}
+    </div>
+  );
+
   const renderToasts = () => (
     <div className="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none">
       {toasts.map((toast) => {
@@ -437,6 +550,7 @@ function App() {
       <Sidebar currentView={currentView} onChangeView={(view) => {
         setCurrentView(view);
         setSelectedDocs(new Set());
+        setSplitRange('');
       }} />
       
       <main className="flex-1 ml-64 p-8">
@@ -444,6 +558,7 @@ function App() {
           {currentView === ViewState.DASHBOARD && renderDashboard()}
           {currentView === ViewState.DOCUMENTS && renderDocumentList(false)}
           {currentView === ViewState.MERGE && renderMergeView()}
+          {currentView === ViewState.SPLIT && renderSplitView()}
           {currentView === ViewState.ROTATE && renderRotateView()}
         </div>
       </main>

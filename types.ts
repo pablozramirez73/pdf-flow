@@ -20,6 +20,7 @@ export enum ViewState {
   DOCUMENTS = 'DOCUMENTS',
   MERGE = 'MERGE',
   ROTATE = 'ROTATE',
+  SPLIT = 'SPLIT',
 }
 
 export interface ToastMessage {
