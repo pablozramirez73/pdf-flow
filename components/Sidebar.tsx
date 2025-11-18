@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Files, Merge, RefreshCw, FileText, Scissors, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Files, Merge, RefreshCw, FileText, Scissors, Sparkles, Globe } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.DOCUMENTS, label: 'My Documents', icon: Files },
     { id: ViewState.AI_ASSISTANT, label: 'AI Assistant', icon: Sparkles },
+    { id: ViewState.WEB_SEARCH, label: 'Web Search', icon: Globe },
     { id: ViewState.MERGE, label: 'Merge PDFs', icon: Merge },
     { id: ViewState.SPLIT, label: 'Split PDF', icon: Scissors },
     { id: ViewState.ROTATE, label: 'Rotate PDFs', icon: RefreshCw },

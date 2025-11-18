@@ -6,7 +6,7 @@ import { dbService } from './services/db.ts';
 import { pdfService } from './services/pdfService.ts';
 import { aiService } from './services/aiService.ts';
 import { PDFMetadata, ViewState, ToastMessage } from './types';
-import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors, Sparkles, Bot } from 'lucide-react';
+import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors, Sparkles, Bot, Globe, ExternalLink, Search } from 'lucide-react';
 
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
@@ -30,6 +30,8 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [splitRange, setSplitRange] = useState('');
   const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState<{ text: string; sources: { title: string; uri: string }[] } | null>(null);
 
   // Initial Data Load
   useEffect(() => {
@@ -239,6 +241,23 @@ function App() {
       }
     } catch (error) {
       addToast('error', error instanceof Error ? error.message : 'Failed to analyze document');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleWebSearch = async () => {
+    if (!searchQuery.trim()) {
+      addToast('error', 'Please enter a search query');
+      return;
+    }
+    setIsProcessing(true);
+    setSearchResult(null);
+    try {
+      const result = await aiService.searchWeb(searchQuery);
+      setSearchResult(result);
+    } catch (error) {
+      addToast('error', error instanceof Error ? error.message : 'Search failed');
     } finally {
       setIsProcessing(false);
     }
@@ -589,6 +608,87 @@ function App() {
     </div>
   );
 
+  const renderWebSearchView = () => (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-3 bg-blue-50 rounded-lg">
+            <Globe className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Web Search</h2>
+            <p className="text-gray-500 text-sm">Ask questions and get answers grounded in Google Search.</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleWebSearch()}
+              placeholder="Ask anything (e.g., 'Latest news on climate change')"
+              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <button
+            onClick={handleWebSearch}
+            disabled={!searchQuery.trim() || isProcessing}
+            className={`
+              flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-white transition-all
+              ${!searchQuery.trim() || isProcessing 
+                ? 'bg-gray-300 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 active:scale-95'}
+            `}
+          >
+            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            <span>Search</span>
+          </button>
+        </div>
+      </div>
+
+      {searchResult && (
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-blue-100 animate-fade-in-up">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+            <Bot className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-gray-800">AI Answer</h3>
+          </div>
+          <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap mb-6">
+            {searchResult.text}
+          </div>
+
+          {searchResult.sources && searchResult.sources.length > 0 && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Globe className="w-3 h-3" /> Sources
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {searchResult.sources.map((source, idx) => (
+                  <a
+                    key={idx}
+                    href={source.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all group"
+                  >
+                    <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 truncate group-hover:text-blue-600" title={source.title}>
+                      {source.title}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   const renderToasts = () => (
     <div className="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none">
       {toasts.map((toast) => {
@@ -623,6 +723,7 @@ function App() {
         setSelectedDocs(new Set());
         setSplitRange('');
         setAiSummary(null);
+        setSearchResult(null);
       }} />
       
       <main className="flex-1 ml-64 p-8">
@@ -633,6 +734,7 @@ function App() {
           {currentView === ViewState.SPLIT && renderSplitView()}
           {currentView === ViewState.ROTATE && renderRotateView()}
           {currentView === ViewState.AI_ASSISTANT && renderAiView()}
+          {currentView === ViewState.WEB_SEARCH && renderWebSearchView()}
         </div>
       </main>
 

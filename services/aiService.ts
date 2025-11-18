@@ -45,5 +45,37 @@ export const aiService = {
       console.error("AI Service Error:", error);
       throw new Error("Failed to analyze document with Gemini API. Please check your API Key.");
     }
+  },
+
+  async searchWeb(query: string): Promise<{ text: string; sources: { title: string; uri: string }[] }> {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: query,
+        config: {
+          tools: [{ googleSearch: {} }],
+        },
+      });
+
+      const text = response.text || "No results found.";
+      
+      // Extract grounding metadata
+      // The structure is response.candidates[0].groundingMetadata.groundingChunks
+      // Each chunk may have a 'web' property: { uri: string, title: string }
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      
+      const sources = groundingChunks
+        .map((chunk: any) => chunk.web)
+        .filter((web: any) => web && web.uri && web.title)
+        .map((web: any) => ({
+          title: web.title,
+          uri: web.uri
+        }));
+
+      return { text, sources };
+    } catch (error) {
+      console.error("AI Search Error:", error);
+      throw new Error("Failed to perform web search.");
+    }
   }
 };

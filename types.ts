@@ -22,6 +22,7 @@ export enum ViewState {
   ROTATE = 'ROTATE',
   SPLIT = 'SPLIT',
   AI_ASSISTANT = 'AI_ASSISTANT',
+  WEB_SEARCH = 'WEB_SEARCH',
 }
 
 export interface ToastMessage {
