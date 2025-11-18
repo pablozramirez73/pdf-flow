@@ -1,0 +1,5 @@
+{
+  "name": "PDFFlow",
+  "description": "A comprehensive client-side PDF workflow application featuring document management, merging, rotation, and organization capabilities using a persistent local database.",
+  "requestFramePermissions": []
+}
