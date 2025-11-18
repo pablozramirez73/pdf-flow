@@ -6,7 +6,7 @@ import { dbService } from './services/db.ts';
 import { pdfService } from './services/pdfService.ts';
 import { aiService } from './services/aiService.ts';
 import { PDFMetadata, ViewState, ToastMessage } from './types';
-import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors, Sparkles, Bot, Globe, ExternalLink, Search } from 'lucide-react';
+import { Trash2, Download, File as FileIcon, ArrowRight, RefreshCw, Merge, CheckCircle, AlertCircle, Info, X, Loader2, Scissors, Sparkles, Bot, Globe, ExternalLink, Search, ArrowUpDown } from 'lucide-react';
 
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
@@ -32,6 +32,7 @@ function App() {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<{ text: string; sources: { title: string; uri: string }[] } | null>(null);
+  const [mergeOrder, setMergeOrder] = useState<'asc' | 'desc'>('asc');
 
   // Initial Data Load
   useEffect(() => {
@@ -110,7 +111,9 @@ function App() {
     try {
       const docsToMerge = documents
         .filter(d => selectedDocs.has(d.id))
-        .sort((a, b) => a.createdAt - b.createdAt);
+        .sort((a, b) => {
+           return mergeOrder === 'asc' ? a.createdAt - b.createdAt : b.createdAt - a.createdAt;
+        });
       
       const buffers: ArrayBuffer[] = [];
       for (const docMeta of docsToMerge) {
@@ -418,7 +421,9 @@ function App() {
   const renderMergeView = () => {
     const selectedList = documents
       .filter(d => selectedDocs.has(d.id))
-      .sort((a, b) => a.createdAt - b.createdAt);
+      .sort((a, b) => {
+        return mergeOrder === 'asc' ? a.createdAt - b.createdAt : b.createdAt - a.createdAt;
+      });
 
     return (
       <div className="space-y-6 animate-fade-in">
@@ -434,19 +439,33 @@ function App() {
               </div>
             </div>
             
-            <button
-              onClick={handleMerge}
-              disabled={selectedDocs.size < 2 || isProcessing}
-              className={`
-                flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-white transition-all
-                ${selectedDocs.size < 2 || isProcessing 
-                  ? 'bg-gray-300 cursor-not-allowed' 
-                  : 'bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30 active:scale-95'}
-              `}
-            >
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Merge className="w-4 h-4" />}
-              <span>{isProcessing ? 'Merging...' : 'Merge Selected'}</span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMergeOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                disabled={selectedDocs.size < 2}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 font-medium text-gray-600 bg-white transition-all
+                  ${selectedDocs.size < 2 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 hover:text-gray-900 shadow-sm'}
+                `}
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                <span>Reverse Order</span>
+              </button>
+
+              <button
+                onClick={handleMerge}
+                disabled={selectedDocs.size < 2 || isProcessing}
+                className={`
+                  flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-white transition-all
+                  ${selectedDocs.size < 2 || isProcessing 
+                    ? 'bg-gray-300 cursor-not-allowed' 
+                    : 'bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30 active:scale-95'}
+                `}
+              >
+                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Merge className="w-4 h-4" />}
+                <span>{isProcessing ? 'Merging...' : 'Merge Selected'}</span>
+              </button>
+            </div>
           </div>
 
           {selectedList.length > 0 && (
