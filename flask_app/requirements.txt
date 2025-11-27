@@ -1,2 +1,5 @@
 Flask
 Flask-SQLAlchemy
+openpyxl
+pypdf
+xlrd

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Training - {{ employee.surname }} {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>
+                <i class="fas fa-user-graduate me-2 text-primary"></i>
+                {{ employee.surname }} {{ employee.name }}
+                <small class="text-muted fs-6 ms-2">({{ employee.code }})</small>
+            </h3>
+            <a href="{{ url_for('training_list') }}" class="btn btn-outline-secondary btn-sm"><i
+                    class="fas fa-arrow-left me-1"></i>Back to List</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary"><i class="fas fa-search me-2"></i>Filter Courses</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date"
+                            value="{{ request.args.get('start_date', '') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date"
+                            value="{{ request.args.get('end_date', '') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary me-2"><i
+                                class="fas fa-filter me-1"></i>Filter</button>
+                        <a href="{{ url_for('employee_training', employee_id=employee.id) }}"
+                            class="btn btn-outline-secondary"><i class="fas fa-times me-1"></i>Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary"><i class="fas fa-file-excel me-2"></i>Import Courses from Excel</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" class="row g-3 align-items-center">
+                    <div class="col-auto flex-grow-1">
+                        <input class="form-control" type="file" id="formFile" name="file" accept=".xlsx, .xls">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success"><i class="fas fa-upload me-2"></i>Import
+                            Excel</button>
+                    </div>
+                </form>
+                <div class="form-text mt-2">Upload the training Excel file for this employee.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary"><i class="fas fa-list-alt me-2"></i>Course History</h5>
+        <h5 class="mb-0 text-primary"><i class="fas fa-list-alt me-2"></i>Course History</h5>
+        <span class="badge bg-primary rounded-pill">{{ courses|length }} Courses</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Date</th>
+                        <th>Place</th>
+                        <th>Event</th>
+                        <th>Credits</th>
+                        <th>Certificate (PDF)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td class="ps-3">{{ course.date.strftime('%d/%m/%Y') if course.date else '-' }}</td>
+                        <td>{{ course.place }}</td>
+                        <td>{{ course.event_name }}</td>
+                        <td>{{ course.ecm_credits }}</td>
+                        <td>
+                            {% if course.pdf_filename %}
+                            <a href="{{ url_for('uploaded_file', filename=course.pdf_filename) }}"
+                                class="btn btn-sm btn-outline-success mb-1" target="_blank">
+                                <i class="fas fa-file-pdf me-1"></i>View PDF
+                            </a>
+                            {% endif %}
+                            <form action="{{ url_for('upload_course_pdf', course_id=course.id) }}" method="post"
+                                enctype="multipart/form-data" class="d-flex align-items-center mt-1">
+                                <input type="file" name="pdf" class="form-control form-control-sm me-2" accept=".pdf"
+                                    style="width: 200px;">
+                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Upload PDF">
+                                    <i class="fas fa-upload"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

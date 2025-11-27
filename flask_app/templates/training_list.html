@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Training Management{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h4 class="mb-0 text-primary"><i class="fas fa-graduation-cap me-2"></i>Training Management</h4>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Code</th>
+                        <th>Name</th>
+                        <th>Job Title</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for employee in employees %}
+                    <tr>
+                        <td class="ps-3 fw-bold text-secondary">{{ employee.code }}</td>
+                        <td>{{ employee.surname }} {{ employee.name }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ employee.job_title }}</span></td>
+                        <td class="text-end pe-3">
+                            <a href="{{ url_for('employee_training', employee_id=employee.id) }}"
+                                class="btn btn-sm btn-primary">
+                                <i class="fas fa-tasks me-2"></i>Manage Training
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
