@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 text-primary"><i class="fas fa-user-edit me-2"></i>Edit Employee</h4>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm"><i
+                        class="fas fa-arrow-left me-1"></i>Back</a>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="code" name="code"
+                                    value="{{ employee.code }}" placeholder="Code">
+                                <label for="code">Employee Code</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="surname" name="surname"
+                                    value="{{ employee.surname }}" placeholder="Surname" required>
+                                <label for="surname">Surname</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="name" name="name"
+                                    value="{{ employee.name }}" placeholder="Name" required>
+                                <label for="name">Name</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="fiscal_code" name="fiscal_code"
+                                    value="{{ employee.fiscal_code }}" placeholder="Fiscal Code">
+                                <label for="fiscal_code">Fiscal Code</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="email" class="form-control" id="email" name="email"
+                                    value="{{ employee.email }}" placeholder="Email">
+                                <label for="email">Email</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="job_title" name="job_title"
+                                    value="{{ employee.job_title }}" placeholder="Job Title">
+                                <label for="job_title">Job Title</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="birth_place" name="birth_place"
+                                    value="{{ employee.birth_place }}" placeholder="Birth Place">
+                                <label for="birth_place">Birth Place</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="date" class="form-control" id="birth_date" name="birth_date"
+                                    value="{{ employee.birth_date.strftime('%Y-%m-%d') if employee.birth_date else '' }}"
+                                    placeholder="Birth Date">
+                                <label for="birth_date">Birth Date</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="date" class="form-control" id="hiring_date" name="hiring_date"
+                                    value="{{ employee.hiring_date.strftime('%Y-%m-%d') if employee.hiring_date else '' }}"
+                                    placeholder="Hiring Date">
+                                <label for="hiring_date">Hiring Date</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="date" class="form-control" id="termination_date" name="termination_date"
+                                    value="{{ employee.termination_date.strftime('%Y-%m-%d') if employee.termination_date else '' }}"
+                                    placeholder="Termination Date">
+                                <label for="termination_date">Termination Date</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 text-end mt-4">
+                            <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i>Save
+                                Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
