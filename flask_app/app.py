@@ -3,13 +3,44 @@ import csv
 import io
 import openpyxl
 import xlrd
+import logging
+import time
+from logging.handlers import RotatingFileHandler
 from pypdf import PdfReader, PdfWriter
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, g
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 
+# Configure logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+
 app = Flask(__name__)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('PDF Flow startup')
+
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    if hasattr(g, 'start_time'):
+        duration = time.time() - g.start_time
+        app.logger.info(
+            f"{request.remote_addr} - {request.method} {request.path} "
+            f"{response.status_code} - {duration:.4f}s"
+        )
+    return response
+
 app.secret_key = 'supersecretkey' # Change this in production
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///employees.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

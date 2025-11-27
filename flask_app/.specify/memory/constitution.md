@@ -1,4 +1,4 @@
-# [PROJECT_NAME] Constitution
+# [Corsi_Formazione] Constitution
 <!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
